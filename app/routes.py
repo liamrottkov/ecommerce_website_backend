@@ -24,8 +24,8 @@ def save():
         image_url = request.headers.get('image_url')
 
         # if any info is missing, give back an error jsonified message
-        if not title or not price or not description or not image_url:
-            return jsonify({ 'error' : 'Invalid parameters' })
+        # if not title or not price or not description or not image_url:
+        #     return jsonify({ 'error' : 'Invalid parameters' })
 
         # all info is included, save the event
         product = Product(title=title, price=price, description=description, image_url=image_url)
@@ -93,9 +93,9 @@ def retrieve():
 @app.route('/api/delete', methods=['DELETE'])
 def delete():
     try:
-        product_id = request.headers.get('product_id')
+        title = request.headers.get('title')
 
-        product = Product.query.filter_by(product_id=product_id).first()
+        product = Product.query.filter_by(title=title).first()
 
         if not product:
             return jsonify({ 'error': 'Error #005: Product does not exist' })
@@ -119,7 +119,7 @@ def savePost():
         name = request.headers.get('name')
         email = request.headers.get('email')
         message = request.headers.get('message')
-        print(name, email, message)
+
         # if any info is missing, give back an error jsonified message
         if not name or not email or not message:
             return jsonify({ 'error' : 'Invalid parameters' })
@@ -138,7 +138,7 @@ def savePost():
 
 
 @app.route('/api/retrieve', methods=['GET'])
-def checkout():
+def getProduct():
     try:
         title = request.headers.get('title')
         price = request.headers.get('price')
@@ -188,14 +188,12 @@ def checkout():
 
 
 @app.route('/api/retrieve/products', methods=['GET'])
-def showProds():
+def showAllProds():
     try:
         product = Product.query.all()
 
-
         products = []
 
-        print('this should print')
         for p in product:
             new_product = {
                 'title': p.title,
@@ -288,8 +286,8 @@ def data():
         # query database with user id that we got back from the verify token method, and create a new token to be passed back with encrypted information
 
         data = {
-            'name': 'John Smith',
-            'age': 27,
+            'name': 'Liam Rottkov',
+            'age': 24,
         }
 
         return jsonify({ 'info' : data })
