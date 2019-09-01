@@ -1,0 +1,13 @@
+Dear {{ email }},
+
+Someone sent you a message!
+
+The information is as follows:
+
+Name: {{ name }}
+Email: {{ email }}
+Message: {{ message }}
+
+
+Sincerely,
+Joe Mama

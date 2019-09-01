@@ -1,8 +1,78 @@
 from app import app, db
 from flask import request, jsonify
-from app.models import Product, Contact, User
+from app.models import Product, Contact, User, Checkout
 import time
 import jwt
+from app.email import sendEmail
+import requests
+import stripe
+
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
+
+@app.route('/api/payment', methods=['POST'])
+def payment():
+    token_id = request.headers.get('token')
+    email = request.headers.get('email')
+    amount = request.headers.get('amount')
+    name = request.headers.get('name')
+    street = request.headers.get('street')
+    city = request.headers.get('city')
+    state = request.headers.get('state')
+    country = request.headers.get('country')
+
+
+    print('**************************************')
+    print('**************************************')
+    print('**************************************')
+    print(token_id)
+    print(email)
+    print(amount)
+    print(name)
+    print(street)
+    print(city)
+    print(state)
+    print(country)
+    print('**************************************')
+    print('**************************************')
+    print('**************************************')
+
+    # create a customer object from stripe so that we can create a payment charge based on the customer id
+    customer = stripe.Customer.create(
+        email = email,
+        source = token_id,
+        name = name,
+    )
+
+    # create a charge on stripe with the customer id, which allows stripe to access the information inside of the token sent from the frontend
+    charge = stripe.Charge.create(
+        customer=customer.id,
+        amount=amount,
+        currency='usd',
+        description="This was a test purchase using React frontend."
+    )
+
+    print(charge)
+
+    # get information you want to store out of charge and saved into variable below
+    data_to_save = {
+    token_id: "token",
+    email: "email",
+    amount: "total",
+    name: "name",
+    street: "street",
+    city: "city",
+    state: "state",
+    country: "country"
+    }
+
+    # create an instance of the Checkout table to store
+    checkout = Checkout(amount=amount, name=name, email=email, street=street, city=city, state=state, country=country)
+
+    # db.sessoin.add() and commit to database
+    db.session.add(checkout)
+    db.session.commit()
+
+    return jsonify({ 'message' : 'success' })
 
 
 # set index route to return nothing, just so no error occurs
@@ -13,6 +83,38 @@ def index():
 
 
 
+# @app.route('/api/save/checkout', methods=['POST'])
+# def saveCheckout():
+#     try:
+#         # get headers first
+#         # NOTE: nothing to do with html headers
+#         title = request.headers.get('title')
+#         price = request.headers.get('price')
+#         quantity = request.headers.get('quantity')
+#         name = request.headers.get('name')
+#         email = request.headers.get('email')
+#         street = request.headers.get('street')
+#         city = request.headers.get('city')
+#         state = request.headers.get('state')
+#         country = request.headers.get('country')
+#
+#
+#         # if any info is missing, give back an error jsonified message
+#         # if not title or not price or not description or not image_url:
+#         #     return jsonify({ 'error' : 'Invalid parameters' })
+#
+#         # all info is included, save the event
+#         checkout = Checkout(title=title, price=price, quantity=quantity, name=name, email=email, street=street, city=city, state=state, country=country)
+#
+#         # add to db
+#         db.session.add(checkout)
+#         db.session.commit()
+#
+#         return jsonify({ 'success' : 'Saved Checkout Order' })
+#     except:
+#         return jsonify({ 'error' : 'Error #002: Could not save Checkout Order' })
+#
+
 @app.route('/api/save', methods=['POST'])
 def save():
     try:
@@ -22,13 +124,14 @@ def save():
         price = request.headers.get('price')
         description = request.headers.get('description')
         image_url = request.headers.get('image_url')
+        quantity = request.headers.get('quantity')
 
         # if any info is missing, give back an error jsonified message
         # if not title or not price or not description or not image_url:
         #     return jsonify({ 'error' : 'Invalid parameters' })
 
         # all info is included, save the event
-        product = Product(title=title, price=price, description=description, image_url=image_url)
+        product = Product(title=title, price=price, description=description, image_url=image_url, quantity=quantity)
 
         # add to db
         db.session.add(product)
@@ -47,6 +150,7 @@ def retrieve():
         price = request.headers.get('price')
         description = request.headers.get('description')
         image_url = request.headers.get('image_url')
+        quantity = request.headers.get('quantity')
 
 
         if not title:
@@ -62,7 +166,7 @@ def retrieve():
             results = Product.query.filter_by(title=title, price=price).all()
         else:
             # get the specific products
-            results = Product.query.filter_by(title=title, price=price, description=description, image_url=image_url).all()
+            results = Product.query.filter_by(title=title, price=price, description=description, image_url=image_url, quantity=quantity).all()
 
         # if results is empty, there are no products, return response
         if results == []:
@@ -76,7 +180,8 @@ def retrieve():
                 'title': result.title,
                 'price': result.price,
                 'description': result.description,
-                'image_url': result.image_url
+                'image_url': result.image_url,
+                'quantity': result.quantity
             }
 
             products.append(product)
@@ -131,58 +236,12 @@ def savePost():
         db.session.add(contact)
         db.session.commit()
 
+        sendEmail(name, email, message)
+
         return jsonify({ 'success' : 'Message recieved! We will get back to you as soon as we can!' })
 
         return jsonify({ 'error' : 'Error #002: Could not save Message' })
 
-
-
-@app.route('/api/retrieve', methods=['GET'])
-def getProduct():
-    try:
-        title = request.headers.get('title')
-        price = request.headers.get('price')
-        description = request.headers.get('description')
-
-        if not title:
-            return jsonify({ 'error' : 'Error #003: Title is required' })
-        # get results by price
-        elif price and not title and not description:
-            results = Product.query.filter_by( price=price).all()
-        # get products by title
-        elif title and not price and not description:
-            results = Product.query.filter_by(title=title).all()
-        # get products for the title and price
-        elif title and price and not description:
-            results = Product.query.filter_by(title=title, price=price).all()
-        else:
-            # get the specific products
-            results = Product.query.filter_by(title=title, price=price, description=description).all()
-
-        # if results is empty, there are no products, return response
-        if results == []:
-            return jsonify({ 'success' : 'No products to show' })
-
-        # loop over results because it is an instance of Product, save information into new list and return
-        products = []
-
-        for result in results:
-            product = {
-                'title': result.title,
-                'price': result.price,
-                'description': result.description,
-                'product_id': result.product_id,
-                'image_url': result.image_url
-            }
-
-            products.append(product)
-
-        return jsonify({
-            'success' : 'Retrieved Products',
-            'products': products
-        })
-    except:
-        return jsonify({ 'error': 'Error #007: Something went wrong' })
 
 
 
@@ -200,7 +259,8 @@ def showAllProds():
                 'price': p.price,
                 'description': p.description,
                 'product_id': p.product_id,
-                'image_url': p.image_url
+                'image_url': p.image_url,
+                'quantity': p.quantity
             }
 
             products.append(new_product)
@@ -215,60 +275,56 @@ def showAllProds():
 
 @app.route('/authentication/register', methods=['POST'])
 def register():
-    try:
-        token = request.headers.get('token')
+    token = request.headers.get('token')
 
-        print(token)
+    print(token)
 
-        # decode the token back to a dictionary
-        data = jwt.decode(
-            token,
-            app.config['SECRET_KEY'],
-            algorithm=['HS256']
-        )
+    # decode the token back to a dictionary
+    data = jwt.decode(
+        token,
+        app.config['SECRET_KEY'],
+        algorithm=['HS256']
+    )
 
-        print(data)
+    print(data)
 
-        # create the user and save
-        user = User(email=data['email'])
-        user.set_password(data['password'])
-        db.session.add(user)
-        db.session.commit()
+    # create the user and save
+    user = User(email=data['email'], admin=0)
+    user.set_password(data['password'])
+    db.session.add(user)
+    db.session.commit()
 
-        return jsonify({ 'message' : 'success' })
-    except:
-        return jsonify({ 'message' : 'Error #001: User not created' })
+    return jsonify({ 'message' : 'success' })
+    return jsonify({ 'message' : 'Error #001: User not created' })
 
 
 
 
 @app.route('/authentication/login', methods=['GET'])
 def login():
-    try:
-        token = request.headers.get('token')
+    token = request.headers.get('token')
 
-        print(token)
+    print(token)
 
-        # decode the token back to a dictionary
-        data = jwt.decode(
-            token,
-            app.config['SECRET_KEY'],
-            algorithm=['HS256']
-        )
+    # decode the token back to a dictionary
+    data = jwt.decode(
+        token,
+        app.config['SECRET_KEY'],
+        algorithm=['HS256']
+    )
 
-        print(data)
+    print(data)
 
-        # query db to get user and check password
-        user = User.query.filter_by(email=data['email']).first()
+    # query db to get user and check password
+    user = User.query.filter_by(email=data['email']).first()
 
-        # if user doesn't exist or password incorrect, send fail msg
-        if user is None or not user.check_password(data['password']):
-            return jsonify({ 'message' :  'Error #002: Invalid Credentials' })
+    # if user doesn't exist or password incorrect, send fail msg
+    if user is None or not user.check_password(data['password']):
+        return jsonify({ 'message' :  'Error #002: Invalid Credentials' })
 
-        # create a token for that user and return it
-        return jsonify({ 'message' : 'success', 'token': user.get_token() })
-    except:
-        return jsonify({ 'message' : 'Error #003: Failure to Login' })
+    # create a token for that user and return it
+    return jsonify({ 'message' : 'success', 'token': user.get_token(), 'admin': user.admin })
+    return jsonify({ 'message' : 'Error #003: Failure to Login' })
 
 
 

@@ -11,6 +11,7 @@ class Product(db.Model):
     price = db.Column(db.Integer)
     description = db.Column(db.String(500))
     image_url = db.Column(db.String(200))
+    quantity = db.Column(db.Integer)
 
 class Contact(db.Model):
     contact_id = db.Column(db.Integer, primary_key=True)
@@ -19,10 +20,22 @@ class Contact(db.Model):
     message = db.Column(db.String(500))
     date_posted = db.Column(db.DateTime, default=datetime.now().date())
 
+class Checkout(db.Model):
+    checkout_id = db.Column(db.Integer, primary_key=True)
+    amount = db.Column(db.Integer)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(100))
+    street = db.Column(db.String(100))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    country = db.Column(db.String(100))
+
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
+    admin = db.Column(db.Integer)
 
     # create methods for setting and getting password hash
     def set_password(self, password):
