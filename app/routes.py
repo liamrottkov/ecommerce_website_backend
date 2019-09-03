@@ -38,6 +38,7 @@ def payment():
 
     # create a customer object from stripe so that we can create a payment charge based on the customer id
     customer = stripe.Customer.create(
+
         email = email,
         source = token_id,
         name = name,
@@ -82,39 +83,6 @@ def index():
     return ''
 
 
-
-# @app.route('/api/save/checkout', methods=['POST'])
-# def saveCheckout():
-#     try:
-#         # get headers first
-#         # NOTE: nothing to do with html headers
-#         title = request.headers.get('title')
-#         price = request.headers.get('price')
-#         quantity = request.headers.get('quantity')
-#         name = request.headers.get('name')
-#         email = request.headers.get('email')
-#         street = request.headers.get('street')
-#         city = request.headers.get('city')
-#         state = request.headers.get('state')
-#         country = request.headers.get('country')
-#
-#
-#         # if any info is missing, give back an error jsonified message
-#         # if not title or not price or not description or not image_url:
-#         #     return jsonify({ 'error' : 'Invalid parameters' })
-#
-#         # all info is included, save the event
-#         checkout = Checkout(title=title, price=price, quantity=quantity, name=name, email=email, street=street, city=city, state=state, country=country)
-#
-#         # add to db
-#         db.session.add(checkout)
-#         db.session.commit()
-#
-#         return jsonify({ 'success' : 'Saved Checkout Order' })
-#     except:
-#         return jsonify({ 'error' : 'Error #002: Could not save Checkout Order' })
-#
-
 @app.route('/api/save', methods=['POST'])
 def save():
     try:
@@ -140,7 +108,6 @@ def save():
         return jsonify({ 'success' : 'Saved Product' })
     except:
         return jsonify({ 'error' : 'Error #002: Could not save Product' })
-
 
 
 @app.route('/api/retrieve', methods=['GET'])
@@ -244,8 +211,6 @@ def savePost():
 
 
 
-
-
 @app.route('/api/retrieve/products', methods=['GET'])
 def showAllProds():
     try:
@@ -327,25 +292,25 @@ def login():
     return jsonify({ 'message' : 'Error #003: Failure to Login' })
 
 
-
-@app.route('/api/data', methods=['GET'])
-def data():
-    try:
-        token = request.headers.get('token')
-
-        # get user id or none
-        user = User.verify_token(token)
-
-        if not user:
-            return jsonify({ 'message' : 'Error #004: Invalid User' })
-
-        # query database with user id that we got back from the verify token method, and create a new token to be passed back with encrypted information
-
-        data = {
-            'name': 'Liam Rottkov',
-            'age': 24,
-        }
-
-        return jsonify({ 'info' : data })
-    except:
-        return jsonify({ 'message' : 'Error #005: Invalid token'})
+#
+# @app.route('/api/data', methods=['GET'])
+# def data():
+#     try:
+#         token = request.headers.get('token')
+#
+#         # get user id or none
+#         user = User.verify_token(token)
+#
+#         if not user:
+#             return jsonify({ 'message' : 'Error #004: Invalid User' })
+#
+#         # query database with user id that we got back from the verify token method, and create a new token to be passed back with encrypted information
+#
+#         data = {
+#             'name': 'Liam Rottkov',
+#             'age': 24,
+#         }
+#
+#         return jsonify({ 'info' : data })
+#     except:
+#         return jsonify({ 'message' : 'Error #005: Invalid token'})
