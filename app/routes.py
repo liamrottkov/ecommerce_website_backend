@@ -38,7 +38,6 @@ def payment():
 
     # create a customer object from stripe so that we can create a payment charge based on the customer id
     customer = stripe.Customer.create(
-
         email = email,
         source = token_id,
         name = name,
