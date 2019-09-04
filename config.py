@@ -17,4 +17,4 @@ class Config(object):
     MAIL_PASSWORD = 'orydgtdpafeujccx'
     ADMINS = ['liamrottkov@gmail.com']
 
-    STRIPE_SECRET_KEY = 'sk_test_gUH3cKuaDnopSpMj5rATyhOc00kgDm3uWA'
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
